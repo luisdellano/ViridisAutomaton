@@ -1,32 +1,68 @@
 #include <Arduino.h>
-#include "Pump.h"
+#include "Sensor/HumiditySensor.h"
+#include "Comms.h"
+#include "Camera.h"
 
-int RELAY_PIN = 5;
+// Configurações de hardware e credenciais
+const int PIN_SENSOR_HUMIDITY = 34;
+const char *SSID = "YOUR_SSID";
+const char *PASSWORD = "YOUR_PASSWORD";
+const char *API_TOKEN = "YOUR_TAGOIO_API_TOKEN";
 
-Pump pump(RELAY_PIN);
+// Intervalos de envio (em milissegundos)
+const unsigned long SENSOR_DATA_INTERVAL = 30000;    // Intervalo de leitura e envio dos sensores
+const unsigned long PHOTO_CAPTURE_INTERVAL = 300000; // Intervalo de captura e envio de fotos
+
+// Instâncias dos módulos
+HumiditySensor humiditySensor(PIN_SENSOR_HUMIDITY);
+Comms comms(SSID, PASSWORD, API_TOKEN);
+Camera camera;
 
 void setup()
 {
-  // Inicializa a comunicação serial e o módulo de irrigação
   Serial.begin(115200);
-  pump.start();
-  Serial.println("Sistema de Irrigação Iniciado.");
+
+  // Inicializa módulos
+  humiditySensor.start();
+  comms.connectWiFi();
+
+  // Inicializa a câmera e verifica se foi bem-sucedida
+  if (camera.initialize())
+  {
+    Serial.println("Camera initialized successfully.");
+  }
+  else
+  {
+    Serial.println("Camera initialization failed.");
+  }
 }
 
 void loop()
 {
-  // Logica de irrigação baseada em tempo (exemplo: liga por 5 segundos a cada 20 segundos)
-  static unsigned long tempoUltimaIrrigacao = 0;
-  unsigned long tempoAtual = millis();
+  static unsigned long lastSensorDataTime = 0;
+  static unsigned long lastPhotoTime = 0;
+  unsigned long currentTime = millis();
 
-  if (tempoAtual - tempoUltimaIrrigacao >= 20000)
-  { // A cada 20 segundos
-    Serial.println("Ligando a bomba...");
-    pump.turnOn();
-    delay(5000); // Liga a bomba por 5 segundos
-    Serial.println("Desligando a bomba...");
-    pump.turnOff();
+  // Envio de dados dos sensores no intervalo definido
+  if (currentTime - lastSensorDataTime >= SENSOR_DATA_INTERVAL)
+  {
+    int humidity = humiditySensor.getNormalizedValue();
+    int temperature = 25; // Exemplo, pode adicionar um sensor de temperatura real
 
-    tempoUltimaIrrigacao = tempoAtual; // Atualiza o tempo da última irrigação
+    comms.sendSensorData(humidity, temperature);
+    lastSensorDataTime = currentTime;
   }
+
+  // Envio de fotos no intervalo definido
+  if (currentTime - lastPhotoTime >= PHOTO_CAPTURE_INTERVAL)
+  {
+    String photoBase64 = camera.capturePhotoBase64();
+    if (photoBase64 != "")
+    {
+      comms.sendPhoto(photoBase64);
+    }
+    lastPhotoTime = currentTime;
+  }
+
+  delay(1000); // Intervalo de espera antes da próxima iteração
 }
