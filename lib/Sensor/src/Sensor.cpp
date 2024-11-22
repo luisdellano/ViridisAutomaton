@@ -2,6 +2,10 @@
 
 Sensor::Sensor(int pin) : _pin(pin), _rawValue(0) {}
 
+Sensor::~Sensor()
+{
+}
+
 void Sensor::start()
 {
     pinMode(_pin, INPUT);

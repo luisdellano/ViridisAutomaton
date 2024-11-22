@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "Sensor/HumiditySensor.h"
+#include "HumiditySensor.h"
 #include "Comms.h"
 #include "Camera.h"
 
