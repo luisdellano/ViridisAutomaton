@@ -199,13 +199,15 @@ void loop() {
   // Envia o valor do sensor de umidade para o TagoIO
   sendSoilMoistureToTagoIO(soilMoisture);
 
-  // Controla o relé com base no limite de umidade
+  // Controla o relé e o flash com base no limite de umidade
   if (soilMoisture < soilThreshold) {
     digitalWrite(RELAY_PIN, HIGH); // Ativa o relé
-    Serial.println("Relé ativado!");
+    digitalWrite(FLASH_PIN, HIGH); // Liga o flash
+    Serial.println("Relé e Flash ativados!");
   } else {
     digitalWrite(RELAY_PIN, LOW); // Desativa o relé
-    Serial.println("Relé desativado!");
+    digitalWrite(FLASH_PIN, LOW); // Desliga o flash
+    Serial.println("Relé e Flash desativados!");
   }
 
   // Lógica da câmera permanece inalterada
@@ -225,5 +227,5 @@ void loop() {
   esp_camera_fb_return(fb);
 
   // Aguarda 10 segundos antes da próxima leitura
-  delay(5000);
+  delay(10000);
 }
